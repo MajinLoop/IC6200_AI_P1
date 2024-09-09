@@ -27,12 +27,15 @@ from IPython.display import display, HTML
 from enum import Enum
 import random
 
+scriptpath = '../'
+sys.path.append(os.path.abspath(scriptpath))
+
 import Utils as U
 import importlib
 importlib.reload(U)
 
-FILENAME_D = "./data/diabetes.csv"
-FILENAME_A = "./data/alzheimer.csv"
+FILENAME_D = "../data/diabetes.csv"
+FILENAME_A = "../data/alzheimer.csv"
 
 SHUFFLE_SEED = 153
 COLOR_SEED = 666
