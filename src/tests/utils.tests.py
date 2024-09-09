@@ -5,18 +5,23 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy import stats
+from scipy.stats import shapiro
+import statsmodels.api as sm
 
 from sklearn.metrics import confusion_matrix
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import cross_val_score
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import StandardScaler
-
+from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LogisticRegression
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -27,15 +32,13 @@ from IPython.display import display, HTML
 from enum import Enum
 import random
 
-scriptpath = '../'
-sys.path.append(os.path.abspath(scriptpath))
-
 import Utils as U
 import importlib
 importlib.reload(U)
 
-FILENAME_D = "../data/diabetes.csv"
-FILENAME_A = "../data/alzheimer.csv"
+
+FILENAME_D = "./data/diabetes.csv"
+FILENAME_A = "./data/alzheimer.csv"
 
 SHUFFLE_SEED = 153
 COLOR_SEED = 666
@@ -44,6 +47,7 @@ PD_MAX_WIDTH = 400
 
 TRAINING_CUT = 0.7 # 70%
 SCIKIT_LEARN_RANDOM_STATE = 73
+
 
 pd.set_option('display.max_rows', PD_MAX_ROWS)
 pd.set_option('display.width', PD_MAX_WIDTH)
@@ -75,7 +79,6 @@ def print_scores(y_true, y_pred):
     print(f"F1 Score: {f1:.2f}")
 
     print()
-
 
 
 class Custom_Dataframe:
@@ -206,9 +209,33 @@ cdfa.replace_col_values({'Nondemented': 0, 'Demented': 1}, cdfa.tag_col_name)
 cdfa.replace_col_values({'F': 0, 'M': 1}, "M/F")
 cdfa.show()
 
+
 cdfd.print_tags_balance()
 print()
 cdfa.print_tags_balance()
+
+def gen_correlation_report(cdf, report_name, cmap=False):
+    if os.path.isfile(report_name):
+        print(f"The file '{report_name}' already exists.")
+    else:
+        profile = ProfileReport(cdf.df, title="Diabetes Profiling Report")
+        profile.to_file(output_file=report_name)
+        # display(HTML(file_name))
+
+    # Access correlation matrix
+    correlation_matrix = cdf.df.corr()
+    print(correlation_matrix)
+
+    if(cmap != False):
+        # Heatmap
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(correlation_matrix, annot=True, cmap=cmap, fmt='.2f', linewidths=0.5, vmin=-1, vmax=1)
+
+        plt.title('Correlation matrix', fontsize=16)
+        plt.show()
+
+gen_correlation_report(cdfd, "./reports/Diabetes_Profiling_Report.html", SEABORN_COLORMAPS.PiYG.value)
+gen_correlation_report(cdfa, "./reports/Alzheimer_Profiling_Report.html", SEABORN_COLORMAPS.Coolwarm.value)
 
 
 columns_to_keep = ['Glucose', 'BMI', 'Outcome']
@@ -241,7 +268,6 @@ test_cdfd = Custom_Dataframe(name="Diabetes Testing Custom Dataframe", df=test_d
 train_cdfd.show()
 validation_cdfd.show()
 test_cdfd.show()
-
 
 # Alzheimer custom dataframes
 train_dfa, validation_dfa, test_dfa = tvt_df_split(cdfa.df)
